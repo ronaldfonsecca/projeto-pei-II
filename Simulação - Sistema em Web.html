@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Organização de Pesagem - Simulação Web</title>
+    <style>
+        :root {
+            --primary-color: #004488;
+            --secondary-color: #f0f8ff;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --morning-color: #ffc107;
+            --afternoon-color: #17a2b8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1.8em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 25px;
+        }
+
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        #catalog-form select, #catalog-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: #003366; }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.85em;
+        }
+        .btn-danger:hover { background-color: #c82333; }
+        
+        #received-list table, #turnos-summary table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        #received-list th, #received-list td,
+        #turnos-summary th, #turnos-summary td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        #received-list th {
+            background-color: var(--secondary-color);
+        }
+
+        #received-list td:last-child, #received-list th:last-child {
+            text-align: center;
+        }
+
+        .turno-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .turno-manha { background-color: var(--morning-color); }
+        .turno-tarde { background-color: var(--afternoon-color); }
+        .turno-nd { background-color: #6c757d; }
+
+        #no-products-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Sistema de Organização de Pesagem - Selita (Simulação Web)</h1>
+        </header>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2><span style="font-size: 1.5em; vertical-align: middle;">📋</span> Cadastrar Recebimento</h2>
+                    <form id="catalog-form">
+                        <label for="product-select">Selecione o Produto:</label>
+                        <select id="product-select" name="product-select"></select>
+                        
+                        <label for="quantity-input">Quantidade de Caixas/Unidades:</label>
+                        <input type="number" id="quantity-input" name="quantity" min="1" required>
+                        
+                        <button type="submit" class="btn-primary">Adicionar Produto</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2><span style="font-size: 1.5em; vertical-align: middle;">📊</span> Resumo dos Turnos</h2>
+                    <div id="turnos-summary"></div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card">
+                    <h2><span style="font-size: 1.5em; vertical-align: middle;">📦</span> Produtos Recebidos</h2>
+                    <div id="received-list">
+                        <p id="no-products-message">Nenhum produto recebido cadastrado ainda.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DADOS GLOBAIS E CONSTANTES ---
+            const catalogo_produtos = [
+                { nome: "Mussarela", peso_unitario_kg: 16.0 },
+                { nome: "Mussarela Light", peso_unitario_kg: 16.0 },
+                { nome: "Lanchão", peso_unitario_kg: 12.0 },
+                { nome: "Parmesão", peso_unitario_kg: 9.0 },
+                { nome: "Frescal Grande", peso_unitario_kg: 9.0 },
+                { nome: "Cheddar", peso_unitario_kg: 7.0 },
+                { nome: "Lanchinho", peso_unitario_kg: 6.0 },
+                { nome: "Minas Padrão", peso_unitario_kg: 6.0 },
+                { nome: "Minas Fracionado", peso_unitario_kg: 6.0 },
+                { nome: "Minas Fracionado Zero Lactose", peso_unitario_kg: 6.0 },
+                { nome: "Ricota", peso_unitario_kg: 6.0 },
+                { nome: "Frescal Pequeno", peso_unitario_kg: 6.0 },
+                { nome: "Mussarelinha", peso_unitario_kg: 5.0 },
+                { nome: "Requeijão Tablete", peso_unitario_kg: 4.0 },
+                { nome: "Coalho", peso_unitario_kg: 4.0 },
+                { nome: "Parmesão Fatiado", peso_unitario_kg: 4.0 },
+                { nome: "Reino", peso_unitario_kg: 2.0 }
+            ];
+
+            let produtos_recebidos = [];
+            const LIMITE_PESO_MANHA_BASE = 10000.0;
+            const LIMITE_PESO_MANHA_TETO = 11000.0;
+
+            // --- ELEMENTOS DO DOM ---
+            const productSelect = document.getElementById('product-select');
+            const catalogForm = document.getElementById('catalog-form');
+            const quantityInput = document.getElementById('quantity-input');
+            const receivedListContainer = document.getElementById('received-list');
+            const turnosSummaryContainer = document.getElementById('turnos-summary');
+            const noProductsMessage = document.getElementById('no-products-message');
+
+            // --- FUNÇÕES DE LÓGICA ---
+            const popularCatalogo = () => {
+                catalogo_produtos.forEach((produto, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${produto.nome} (${produto.peso_unitario_kg.toFixed(2)} kg/un)`;
+                    productSelect.appendChild(option);
+                });
+            };
+
+            const distribuirTurnos = () => {
+                if (produtos_recebidos.length === 0) return;
+
+                // Ordena por peso total decrescente antes de distribuir
+                produtos_recebidos.sort((a, b) => b.peso_total - a.peso_total);
+                
+                let peso_acumulado_manha = 0.0;
+                let manha_fechada = false;
+
+                produtos_recebidos.forEach(produto => {
+                    // Reseta o turno antes de recalcular
+                    produto.turno = 0; 
+                    
+                    if (manha_fechada) {
+                        produto.turno = 2; // Tarde
+                        return;
+                    }
+
+                    const peso_produto_atual = produto.peso_total;
+
+                    if ((peso_acumulado_manha + peso_produto_atual) <= LIMITE_PESO_MANHA_BASE) {
+                        produto.turno = 1; // Manhã
+                        peso_acumulado_manha += peso_produto_atual;
+                    } else if (peso_acumulado_manha < LIMITE_PESO_MANHA_BASE && (peso_acumulado_manha + peso_produto_atual) <= LIMITE_PESO_MANHA_TETO) {
+                        produto.turno = 1; // Manhã (com tolerância)
+                        peso_acumulado_manha += peso_produto_atual;
+                        manha_fechada = true; // Fecha o turno da manhã para os próximos
+                    } else {
+                        produto.turno = 2; // Tarde
+                        manha_fechada = true; // Fecha o turno da manhã para os próximos
+                    }
+                });
+            };
+
+            const atualizarTudo = () => {
+                if (produtos_recebidos.length > 0) {
+                    distribuirTurnos();
+                    renderizarListaProdutos();
+                    renderizarResumoTurnos();
+                    noProductsMessage.style.display = 'none';
+                } else {
+                    receivedListContainer.innerHTML = '';
+                    receivedListContainer.appendChild(noProductsMessage);
+                    noProductsMessage.style.display = 'block';
+                    renderizarResumoTurnos(); // Limpa o resumo também
+                }
+            };
+            
+            // --- FUNÇÕES DE RENDERIZAÇÃO ---
+            const renderizarListaProdutos = () => {
+                receivedListContainer.innerHTML = ''; // Limpa a lista antes de renderizar
+                
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Produto</th>
+                            <th>Caixas</th>
+                            <th>Peso Total</th>
+                            <th>Turno</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+
+                produtos_recebidos.forEach((produto, index) => {
+                    const tr = document.createElement('tr');
+                    
+                    let turnoBadge;
+                    if (produto.turno === 1) {
+                        turnoBadge = '<span class="turno-badge turno-manha">Manhã</span>';
+                    } else if (produto.turno === 2) {
+                        turnoBadge = '<span class="turno-badge turno-tarde">Tarde</span>';
+                    } else {
+                        turnoBadge = '<span class="turno-badge turno-nd">N/D</span>';
+                    }
+
+                    tr.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${produto.nome}</td>
+                        <td>${produto.caixas}</td>
+                        <td>${produto.peso_total.toFixed(2)} kg</td>
+                        <td>${turnoBadge}</td>
+                        <td><button class="btn-danger" data-index="${index}">Deletar</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                receivedListContainer.appendChild(table);
+
+                // Adiciona event listeners para os botões de deletar
+                document.querySelectorAll('.btn-danger').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const indexToDelete = parseInt(e.target.dataset.index, 10);
+                        produtos_recebidos.splice(indexToDelete, 1);
+                        atualizarTudo();
+                    });
+                });
+            };
+
+            const renderizarResumoTurnos = () => {
+                let peso_manha = 0, count_manha = 0;
+                let peso_tarde = 0, count_tarde = 0;
+
+                produtos_recebidos.forEach(p => {
+                    if (p.turno === 1) {
+                        peso_manha += p.peso_total;
+                        count_manha++;
+                    } else if (p.turno === 2) {
+                        peso_tarde += p.peso_total;
+                        count_tarde++;
+                    }
+                });
+
+                turnosSummaryContainer.innerHTML = `
+                    <table>
+                        <tr>
+                            <td><strong>Turno Manhã:</strong></td>
+                            <td>${count_manha} produto(s)</td>
+                            <td>${peso_manha.toFixed(2)} kg</td>
+                        </tr>
+                         <tr>
+                            <td colspan="3" style="font-size: 0.8em; color: #666;">
+                                (Limite: ${LIMITE_PESO_MANHA_BASE.toFixed(0)} kg, Teto: ${LIMITE_PESO_MANHA_TETO.toFixed(0)} kg)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Turno Tarde:</strong></td>
+                            <td>${count_tarde} produto(s)</td>
+                            <td>${peso_tarde.toFixed(2)} kg</td>
+                        </tr>
+                    </table>
+                `;
+            };
+
+            // --- EVENTOS ---
+            catalogForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const selectedIndex = parseInt(productSelect.value, 10);
+                const quantity = parseInt(quantityInput.value, 10);
+
+                if (isNaN(quantity) || quantity <= 0) {
+                    alert('Por favor, insira uma quantidade válida.');
+                    return;
+                }
+
+                const produtoBase = catalogo_produtos[selectedIndex];
+                const novoProdutoRecebido = {
+                    nome: produtoBase.nome,
+                    peso_unitario: produtoBase.peso_unitario_kg,
+                    caixas: quantity,
+                    peso_total: produtoBase.peso_unitario_kg * quantity,
+                    turno: 0 // Será definido pela função de distribuição
+                };
+                
+                produtos_recebidos.push(novoProdutoRecebido);
+                
+                // Limpa o formulário e atualiza a tela
+                quantityInput.value = '';
+                atualizarTudo();
+            });
+
+            // --- INICIALIZAÇÃO ---
+            popularCatalogo();
+            atualizarTudo(); // Renderiza o estado inicial
+        });
+    </script>
+</body>
+</html>
